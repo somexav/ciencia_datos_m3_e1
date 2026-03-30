@@ -1,155 +1,121 @@
 # Estudio sobre el Riesgo de Ataques Cardiacos
-
-**Diplomado Ciencias de Datos — Generación 33 | Módulo 3, Primer Examen**
-**Fecha:** Marzo 2026 | **Autor:** Xavier
-
-Aplicación de técnicas de reducción de dimensionalidad para visualizar patrones que sugieran qué pacientes tienen mayor probabilidad de sufrir un ataque cardiaco.
+**Diplomado Ciencias de Datos — Generación 33 | FES Acatlán, UNAM**  
+**Primer Examen — Marzo 2026**
 
 ---
 
-## Objetivo
+## Descripción
 
-Aplicar técnicas de reducción de dimensiones (PCA, MDS y t-SNE) para visualizar patrones en datos de pacientes e identificar aquellos con mayor riesgo cardíaco, como herramienta de cribado inicial para priorizar atención médica.
+Análisis de reducción de dimensiones aplicado a un dataset de biomarcadores cardiacos. El objetivo es proyectar los datos a 2D para identificar visualmente patrones que permitan distinguir pacientes con mayor probabilidad de sufrir un ataque cardiaco.
+
+---
+
+## Archivos
+
+| Archivo | Descripción |
+|---|---|
+| `M3E1_HeartAttack_Xavier.ipynb` | Notebook principal con todo el análisis |
+| `HeartAttack.csv` | Dataset de 1,319 pacientes con 8 variables fisiológicas |
+| `HeartAttack_Dict.csv` | Diccionario de variables |
+| `X_mds_m.csv` | Proyección 2D resultante del MDS Métrico |
+| `X_tsne.csv` | Proyección 2D resultante de t-SNE |
+| `resultado_tsne.csv` | Pacientes clasificados como Alto Riesgo por t-SNE |
 
 ---
 
 ## Dataset
 
-| Archivo | Descripción |
-|---|---|
-| `HeartAttack.csv` | Dataset principal con 1.319 registros de pacientes |
-| `HeartAttack_Dict.csv` | Diccionario de variables |
+1,319 pacientes con las siguientes variables:
 
-### Variables
-
-| Feature | Tipo | Descripción |
+| Variable | Descripción | Unidad |
 |---|---|---|
-| `age` | int | Edad del paciente (14–103 años) |
-| `gender` | int | Género (1 = masculino, 0 = femenino) |
-| `impluse` | int | Pulso (bpm) |
-| `pressurehight` | int | Presión arterial sistólica (mmHg) |
-| `pressurelow` | int | Presión arterial diastólica (mmHg) |
-| `glucose` | float | Nivel de glucosa en sangre (mg/dL) |
-| `kcm` | float | Creatina Quinasa-MB (CK-MB) — biomarcador de daño cardíaco |
-| `troponin` | float | Troponina — biomarcador de daño al corazón |
-
-### Estadísticos Descriptivos
-
-| Variable | Media | Std | Min | Max |
-|---|---|---|---|---|
-| age | 56.19 | 13.65 | 14 | 103 |
-| impluse | 78.34 | 51.63 | 20 | 1111 |
-| pressurehight | 127.17 | 26.12 | 42 | 223 |
-| pressurelow | 72.27 | 14.03 | 38 | 154 |
-| glucose | 146.63 | 74.92 | 35 | 541 |
-| kcm | 15.27 | 46.33 | 0.321 | 300 |
-| troponin | 0.36 | 1.15 | 0.001 | 10.3 |
+| `age` | Edad del paciente | años |
+| `gender` | Género (1 = masculino) | binaria |
+| `impluse` | Pulso | lpm |
+| `pressurehight` | Presión arterial sistólica | mmHg |
+| `pressurelow` | Presión arterial diastólica | mmHg |
+| `glucose` | Nivel de glucosa en sangre | mg/dL |
+| `kcm` | CK-MB (creatina quinasa) | biomarcador cardiaco |
+| `troponin` | Troponina | biomarcador cardiaco |
 
 ---
 
-## Metodología
+## Estructura del Notebook
 
-### 0. Configuración Inicial
-Semilla de reproducibilidad: `random_state = 333`.
+### Sección 0 — Configuración inicial
+- Semilla de reproducibilidad: `random_seed = 333`
+- Importación de librerías
 
-### 1. Análisis Exploratorio (EDA)
-Revisión de distribuciones, estadísticos descriptivos, tipos de datos e identificación de valores atípicos mediante box plots y matriz de correlación.
+### Sección 1 — Análisis Exploratorio de Datos (EDA)
+- Carga del dataset y diccionario
+- Estadísticas descriptivas
+- Distribución de variables e histogramas
+- Boxplots para detección de outliers
+- Matriz de correlación
+- **Limpieza de outliers:** capping con límites fisiológicos en `age`, `impluse`, `pressurehight` y `pressurelow`. Los biomarcadores `kcm` y `troponin` se dejan intactos — sus valores extremos son señal clínica, no ruido
+- **Selección de features:** se excluye `gender` (variable binaria, distorsiona la geometría euclidiana de PCA); se incluyen las 7 variables continuas restantes
 
-- **Correlación relevante:** `pressurehight` ↔ `pressurelow` (r = 0.59), fisiológicamente coherente.
+### Sección 2 — PCA
+- Escalado z-score (`StandardScaler`)
+- Scree plot con varianza explicada por componente
+- Proyección a 2 componentes (PC1: 23.1%, PC2: 16.7%, Total: 39.8%)
+- Loadings para interpretar qué variables dominan cada componente
+- **Segmentación:** círculo de radio 2.5 centrado en el origen — pacientes fuera del círculo = Alto Riesgo
+- Distribución comparativa de variables originales por grupo
+- **Conclusión:** PCA no es óptimo aquí — la varianza está distribuida casi uniformemente entre las 7 componentes (matriz de correlación con valores cercanos a 0), lo que indica baja estructura lineal
 
-### 1.1. Limpieza de Datos
-Capping fisiológico (no eliminación) para preservar pacientes de alto riesgo. Se modificaron **6 valores** en total:
+### Sección 3 — MDS Métrico
+- Proyección preservando distancias euclidianas del espacio original
+- Cálculo de stress normalizado (criterio de Kruskal)
+- Diagrama de Shepard para evaluar calidad de la proyección
+- **Segmentación:** círculo con radio = percentil 90 de distancias al origen (top 10% = Alto Riesgo)
+- **Conclusión:** varianza proyectada ~94% en 2D, pero stress elevado indica que las distancias originales no se preservan fielmente — consistente con la baja correlación entre variables
 
-| Índice | Variable | Valor original | Valor cappado | Límites |
-|---|---|---|---|---|
-| 63, 717, 1069 | impluse | 1111 | 200 | 30–200 bpm |
-| 708, 1060 | impluse | 20 | 30 | 30–200 bpm |
-| 209 | pressurehight | 42 | 60 | 60–300 mmHg |
-
-Troponina, CK-MB y glucosa se conservan sin capping como señales clínicas válidas.
-
-### 1.2. Selección de Features
-- **Excluida:** `gender` (variable binaria categórica; distorsionaría la escala en PCA)
-- **Incluidas:** `age`, `impluse`, `pressurehight`, `pressurelow`, `glucose`, `kcm`, `troponin` — 7 variables continuas fisiológicas
-- Shape resultante: **(1319, 7)**
-
----
-
-## Técnicas de Reducción de Dimensionalidad
-
-### 2. PCA (Análisis de Componentes Principales)
-
-- Estandarización Z-score (`StandardScaler`) sobre las 7 variables numéricas
-- Reducción a 2 componentes principales
-  - **PC1**: 22.94% de varianza explicada
-  - **PC2**: 15.55% de varianza explicada
-  - **Total 2D**: 38.48%
-- Principales contribuyentes a PC1: `pressurehight`, `pressurelow`, `troponin`, `kcm`
-
-**Segmentación:** Umbral **PC1 > 2** (valores positivos indican biomarcadores cardíacos elevados)
-
-| Grupo | N | % |
-|---|---|---|
-| Riesgo bajo | 1.202 | 91.1% |
-| **Alto riesgo** | **117** | **8.9%** |
-
-### 3. MDS Métrico (Escalado Multidimensional)
-
-- Preserva distancias euclidianas del espacio original
-- Calidad evaluada mediante diagrama de Shepard (stress)
-- **Segmentación:** radio = 2.5 (pacientes fuera del círculo = alto riesgo)
-
-| Grupo | N |
-|---|---|
-| Riesgo bajo | 1.187 |
-| **Alto riesgo** | **132** |
-
-### 4. t-SNE
-
-- Reducción no lineal; perplexidad optimizada
-- Calidad evaluada con métrica de **trustworthiness**
-- **Segmentación:** percentil 90 de distancias al centroide (top 10% = alto riesgo)
+### Sección 4 — t-SNE
+- Estimación de perplejidad óptima mediante curva k-NN (método del codo) → `perplexity = 15`
+- Inicialización con PCA (`init='pca'`) para mayor estabilidad
+- Métricas de calidad: divergencia KL y trustworthiness
+- **Segmentación:** polígono definido manualmente sobre la proyección 2D — el interior del polígono corresponde a pacientes de Riesgo Bajo/Moderado; el exterior a Alto Riesgo
+- Exportación de pacientes de Alto Riesgo con variables originales (`resultado_tsne.csv`)
+- Distribución comparativa de variables originales por grupo
+- **Conclusión:** t-SNE es el método más adecuado para este dataset por su capacidad de revelar clusters no lineales
 
 ---
 
-## Resultados Clave
+## Reproducibilidad
 
-- **Separación clara en el espacio PCA** a lo largo de PC1.
-- **Troponina y CK-MB** son los mejores predictores de riesgo cardíaco en este dataset.
-- Edad, presión arterial y glucosa muestran menor poder discriminativo.
-- El grupo de alto riesgo presenta biomarcadores consistentes con infarto agudo de miocardio.
-- Los tres métodos convergen en identificar aproximadamente el **8–10%** de pacientes como alto riesgo.
+```python
+random_seed = 333
+np.random.seed(random_seed)
+```
 
----
+Todos los modelos reciben `random_state=random_seed`. Los resultados son exactamente reproducibles con la misma versión de librerías.
 
-## Archivos Generados
+### Versiones requeridas
 
-| Archivo | Contenido |
-|---|---|
-| `X_mds_m.csv` | Proyección MDS métrico |
-| `X_mds_nm.csv` | Proyección MDS no métrico |
-| `X_tsne.csv` | Proyección t-SNE |
+```
+python      >= 3.10
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scipy
+plotly
+```
 
----
-
-## Notebook
-
-El análisis completo se encuentra en [M3E1_HeartAttack_Xavier.ipynb](M3E1_HeartAttack_Xavier.ipynb).
-
----
-
-## Tecnologías
-
-- Python 3
-- pandas, numpy
-- scikit-learn (`PCA`, `StandardScaler`, `MDS`, `TSNE`, `trustworthiness`, `NearestNeighbors`)
-- matplotlib, seaborn
-- scipy (`procrustes`)
+Instalar con:
+```bash
+pip install numpy pandas matplotlib seaborn scikit-learn scipy plotly
+```
 
 ---
 
-## Limitaciones
+## Decisiones metodológicas clave
 
-- No existe variable de diagnóstico confirmado; la validación es indirecta vía biomarcadores.
-- PCA asume linealidad; t-SNE y MDS no lineal pueden revelar patrones adicionales.
-- El análisis es exploratorio, no un modelo predictivo clínico.
+**¿Por qué capping y no eliminación de outliers?**  
+Eliminar filas con valores extremos en `kcm` o `troponin` equivale a eliminar a los pacientes más enfermos — exactamente los de mayor interés para el análisis. El capping preserva todas las filas y solo corrige valores fisiológicamente imposibles en variables de medición.
+
+**¿Por qué t-SNE sobre PCA para este dataset?**  
+La matriz de correlación muestra que ningún par de variables (excepto `pressurehight`↔`pressurelow`, r=0.59) tiene correlación relevante. PCA solo comprime bien cuando hay correlaciones altas. Con variables casi independientes, el scree plot queda plano y las 2 primeras componentes capturan apenas el 39.8% de la varianza. t-SNE no depende de correlaciones lineales y encuentra estructura local que PCA aplana.
+
