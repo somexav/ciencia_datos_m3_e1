@@ -14,7 +14,7 @@ Análisis de reducción de dimensiones aplicado a un dataset de biomarcadores ca
 
 | Archivo | Descripción |
 |---|---|
-| `M3E1_HeartAttack_Xavier.ipynb` | Notebook principal con todo el análisis |
+| `g33_m3ep1_JavierMartinezReyes_notebook.ipynb` | Notebook principal con todo el análisis |
 | `HeartAttack.csv` | Dataset de 1,319 pacientes con 8 variables fisiológicas |
 | `HeartAttack_Dict.csv` | Diccionario de variables |
 | `X_mds_m.csv` | Proyección 2D resultante del MDS Métrico |
@@ -55,6 +55,14 @@ Análisis de reducción de dimensiones aplicado a un dataset de biomarcadores ca
 - **Limpieza de outliers:** capping con límites fisiológicos en `age`, `impluse`, `pressurehight` y `pressurelow`. Los biomarcadores `kcm` y `troponin` se dejan intactos — sus valores extremos son señal clínica, no ruido
 - **Selección de features:** se excluye `gender` (variable binaria, distorsiona la geometría euclidiana de PCA); se incluyen las 7 variables continuas restantes
 
+![Distribución de variables](figuras/Distribución%20de%20variables%20—%20HeartAttack%20Datasets.png)
+
+![Boxplots — Detección de Valores Atípicos](figuras/Boxplots%20—%20Detección%20de%20Valores%20Atípicos.png)
+
+![Matriz de Correlación](figuras/Matriz%20de%20Correlación.png)
+
+![Distribución después de capping](figuras/Distribución%20de%20variables%20después%20de%20capping%20—%20HeartAttack%20Dataset.png)
+
 ### Sección 2 — PCA
 - Escalado z-score (`StandardScaler`)
 - Scree plot con varianza explicada por componente
@@ -64,12 +72,16 @@ Análisis de reducción de dimensiones aplicado a un dataset de biomarcadores ca
 - Distribución comparativa de variables originales por grupo
 - **Conclusión:** PCA no es óptimo aquí — la varianza está distribuida casi uniformemente entre las 7 componentes (matriz de correlación con valores cercanos a 0), lo que indica baja estructura lineal
 
+![Segmentación PCA](figuras/Segmentación%20en%20Espacio%20PCA%20—%20Círculo%20de%20Riesgo%20Cardiaco.png)
+
 ### Sección 3 — MDS Métrico
 - Proyección preservando distancias euclidianas del espacio original
 - Cálculo de stress normalizado (criterio de Kruskal)
 - Diagrama de Shepard para evaluar calidad de la proyección
 - **Segmentación:** círculo con radio = percentil 90 de distancias al origen (top 10% = Alto Riesgo)
 - **Conclusión:** varianza proyectada ~94% en 2D, pero stress elevado indica que las distancias originales no se preservan fielmente — consistente con la baja correlación entre variables
+
+![MDS Métrico — Segmentación](figuras/MDS%20Métrico%20—%20Segmentación%20por%20círculo.png)
 
 ### Sección 4 — t-SNE
 - Estimación de perplejidad óptima mediante curva k-NN (método del codo) → `perplexity = 15`
@@ -79,6 +91,12 @@ Análisis de reducción de dimensiones aplicado a un dataset de biomarcadores ca
 - Exportación de pacientes de Alto Riesgo con variables originales (`resultado_tsne.csv`)
 - Distribución comparativa de variables originales por grupo
 - **Conclusión:** t-SNE es el método más adecuado para este dataset por su capacidad de revelar clusters no lineales
+
+![Curva k-NN — Perplejidad óptima](figuras/knee_curve.png)
+
+![t-SNE — Segmentación por polígono](figuras/t-SNE%20—%20Segmentación%20por%20polígono.png)
+
+![Distribución de Variables por Grupo — t-SNE](figuras/Distribución%20de%20Variables%20por%20Grupo%20de%20Riesgo%20—%20t-SNE.png)
 
 ---
 
